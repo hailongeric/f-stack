@@ -8,7 +8,7 @@ if not is_linux or not dpdk_conf.get('RTE_ARCH_64')
     subdir_done()
 endif
 
-lib = cc.find_library('librxp_compiler', required: false)
+lib = cc.find_library('librxpcompiler', required: false)
 if lib.found()
     ext_deps += lib
     ext_deps += cc.find_library('libstdc++', required: true)

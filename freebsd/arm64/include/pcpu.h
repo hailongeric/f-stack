@@ -56,7 +56,9 @@ struct debug_monitor_state;
 struct pcb;
 struct pcpu;
 
-register struct pcpu *pcpup __asm ("x18");
+//register struct pcpu *pcpup __asm ("x18");
+
+extern struct pcpu* pcpup;
 
 #define	get_pcpu()	pcpup
 
@@ -69,9 +71,23 @@ get_curthread(void)
 	return (td);
 }
 
-#define	curthread get_curthread()
-#ifdef FSTACK
-#undef	curthread
+//#define	curthread get_curthread()
+//#ifdef FSTACK
+//#undef	curthread
+//#endif
+extern __thread struct thread *pcurthread;
+
+static __inline struct thread *
+__curthread_ff(void)
+{
+	    return (pcurthread);
+}
+
+
+#define __curthread __curthread_ff
+
+#ifndef curthread
+#define curthread __curthread_ff()
 #endif
 
 #define	PCPU_GET(member)	(pcpup->pc_ ## member)

@@ -1619,6 +1619,9 @@ struct mbuf *
 mb_mapped_to_unmapped(struct mbuf *mp, int len, int mlen, int how,
     struct mbuf **mlast)
 {
+	printf("*********************hook mb_mapped_to_unmapped\n\n");
+	return NULL;
+	/*
 	struct mbuf *m, *mout;
 	char *pgpos, *mbpos;
 	int i, mblen, mbufsiz, pglen, xfer;
@@ -1674,4 +1677,5 @@ mb_mapped_to_unmapped(struct mbuf *mp, int len, int mlen, int how,
 	if (mlast != NULL)
 		*mlast = m;
 	return (mout);
+	*/
 }

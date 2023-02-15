@@ -150,26 +150,29 @@ ff_freebsd_init(void)
 
     pcpup = malloc(sizeof(struct pcpu), M_DEVBUF, M_ZERO);
     pcpu_init(pcpup, 0, sizeof(struct pcpu));
-    PCPU_SET(prvspace, pcpup);
+    //!!! hlm
+    //PCPU_SET(prvspace, pcpup);
     CPU_SET(0, &all_cpus);
-
     ff_init_thread0();
 
+    num_hash_buckets = 8192;
+    uma_page_slab_hash = (struct uma_page_head *)kmem_malloc(sizeof(struct uma_page)*num_hash_buckets, M_ZERO);
+    uma_page_mask = num_hash_buckets - 1;
+    
     boot_pages = 16;
     bootmem = (void *)kmem_malloc(boot_pages*PAGE_SIZE, M_ZERO);
     //uma_startup(bootmem, boot_pages);
     uma_startup1((vm_offset_t)bootmem);
     uma_startup2();
 
-    num_hash_buckets = 8192;
-    uma_page_slab_hash = (struct uma_page_head *)kmem_malloc(sizeof(struct uma_page)*num_hash_buckets, M_ZERO);
-    uma_page_mask = num_hash_buckets - 1;
-
     mutex_init();
+    printf("mi_startup st\n");
     mi_startup();
+    printf("sx_init st\n");
     sx_init(&proctree_lock, "proctree");
+    printf("ff_fdused_ranges st\n");
     ff_fdused_range(ff_global_cfg.freebsd.fd_reserve);
-
+    printf("ff fdused fin\n"); 
     cur = ff_global_cfg.freebsd.sysctl;
     while (cur) {
         error = kernel_sysctlbyname(curthread, cur->name, NULL, NULL,
@@ -182,10 +185,10 @@ ff_freebsd_init(void)
 
         cur = cur->next;
     }
-
-    error = lo_set_defaultaddr();
-    if(error != 0)
-        printf("set loopback port default addr failed!");
+    puts("ff free init return\n");
+    //error = lo_set_defaultaddr();
+    //if(error != 0)
+     //   printf("set loopback port default addr failed!");
 
     return (0);
 }

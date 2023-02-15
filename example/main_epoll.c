@@ -58,7 +58,6 @@ char html[] =
 int loop(void *arg)
 {
     /* Wait for events to happen */
-
     int nevents = ff_epoll_wait(epfd,  events, MAX_EVENTS, 0);
     int i;
 
@@ -67,6 +66,7 @@ int loop(void *arg)
         if (events[i].data.fd == sockfd) {
             while (1) {
                 int nclientfd = ff_accept(sockfd, NULL, NULL);
+		printf("nclientfd %d\n",nclientfd);
                 if (nclientfd < 0) {
                     break;
                 }
@@ -88,10 +88,11 @@ int loop(void *arg)
             } else if (events[i].events & EPOLLIN) {
                 char buf[256];
                 size_t readlen = ff_read( events[i].data.fd, buf, sizeof(buf));
+		printf("readlen(%d)fd(%d)\n",readlen,events[i].data.fd);
                 if(readlen > 0) {
                     ff_write( events[i].data.fd, html, sizeof(html) - 1);
                 } else {
-                    ff_epoll_ctl(epfd, EPOLL_CTL_DEL,  events[i].data.fd, NULL);
+                    //ff_epoll_ctl(epfd, EPOLL_CTL_DEL,  events[i].data.fd, NULL);
                     ff_close( events[i].data.fd);
                 }
             } else {
@@ -99,7 +100,57 @@ int loop(void *arg)
             }
         }
     }
+   
 }
+
+int loop2(void *arg)
+{
+    /* Wait for events to happen */
+    int nevents = ff_epoll_wait(epfd,  events, MAX_EVENTS, 20);
+    int i;
+
+    for (i = 0; i < nevents; ++i) {
+        /* Handle new connect */
+        if (events[i].data.fd == sockfd) {
+            while (1) {
+                int nclientfd = ff_accept(sockfd, NULL, NULL);
+                printf("nclientfd %d\n",nclientfd);
+                if (nclientfd < 0) {
+                    break;
+                }
+
+                /* Add to event list */
+                ev.data.fd = nclientfd;
+                ev.events  = EPOLLIN;
+                if (ff_epoll_ctl(epfd, EPOLL_CTL_ADD, nclientfd, &ev) != 0) {
+                    printf("ff_epoll_ctl failed:%d, %s\n", errno,
+                        strerror(errno));
+                    break;
+                }
+            }
+        } else {
+            if (events[i].events & EPOLLERR ) {
+                /* Simply close socket */
+                ff_epoll_ctl(epfd, EPOLL_CTL_DEL,  events[i].data.fd, NULL);
+                ff_close(events[i].data.fd);
+            } else if (events[i].events & EPOLLIN) {
+                char buf[256];
+                size_t readlen = ff_read( events[i].data.fd, buf, sizeof(buf));
+                if(readlen > 0) {
+                    int ret = ff_write( events[i].data.fd, buf, readlen);
+		    printf("read(%d) value(%d) write ret(%d)\n",events[i].data.fd,readlen,ret);
+                } else {
+                    //ff_epoll_ctl(epfd, EPOLL_CTL_DEL,  events[i].data.fd, NULL);
+                    ff_close( events[i].data.fd);
+                }
+            } else {
+                printf("unknown event: %8.8X\n", events[i].events);
+            }
+        }
+    }
+
+}
+
 
 int main(int argc, char * argv[])
 {
@@ -118,7 +169,7 @@ int main(int argc, char * argv[])
     struct sockaddr_in my_addr;
     bzero(&my_addr, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(80);
+    my_addr.sin_port = htons(8080);
     my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     int ret = ff_bind(sockfd, (struct linux_sockaddr *)&my_addr, sizeof(my_addr));
@@ -134,9 +185,11 @@ int main(int argc, char * argv[])
     }
 
     assert((epfd = ff_epoll_create(0)) > 0);
+    printf("epfd %d \n",epfd);
     ev.data.fd = sockfd;
     ev.events = EPOLLIN;
     ff_epoll_ctl(epfd, EPOLL_CTL_ADD, sockfd, &ev);
-    ff_run(loop, NULL);
+    ff_run(loop2, NULL);
+    printf("return \n");
     return 0;
 }

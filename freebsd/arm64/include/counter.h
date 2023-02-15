@@ -31,8 +31,12 @@
 
 #include <sys/pcpu.h>
 #include <machine/atomic.h>
+//#define	EARLY_COUNTER	(void *)__offsetof(struct pcpu, pc_early_dummy_counter)
+#define	EARLY_COUNTER	&pcpup->pc_early_dummy_counter
 
-#define	EARLY_COUNTER	&__pcpu[0].pc_early_dummy_counter
+#define	COUNTER_U64_DEFINE_EARLY(c)         \
+	    counter_u64_t __read_mostly c = (void *)__offsetof(struct pcpu, pc_early_dummy_counter);        \
+	        COUNTER_U64_SYSINIT(c)
 
 #define	counter_enter()	do {} while (0)
 #define	counter_exit()	do {} while (0)
@@ -70,8 +74,9 @@ static inline void
 counter_u64_zero_inline(counter_u64_t c)
 {
 
-	smp_rendezvous(smp_no_rendezvous_barrier, counter_u64_zero_one_cpu,
-	    smp_no_rendezvous_barrier, c);
+	*c=0;
+	//smp_rendezvous(smp_no_rendezvous_barrier, counter_u64_zero_one_cpu,
+	  //  smp_no_rendezvous_barrier, c);
 }
 #endif
 
@@ -81,7 +86,8 @@ static inline void
 counter_u64_add(counter_u64_t c, int64_t inc)
 {
 
-	atomic_add_64((uint64_t *)zpcpu_get(c), inc);
+	//atomic_add_64((uint64_t *)zpcpu_get(c), inc);
+	atomic_add_64((uint64_t *)c, inc);
 }
 
 #endif	/* ! _MACHINE_COUNTER_H_ */

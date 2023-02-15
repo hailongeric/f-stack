@@ -1973,7 +1973,7 @@ main_loop(void *arg)
     while (1) {
         cur_tsc = rte_rdtsc();
         if (unlikely(freebsd_clock.expire < cur_tsc)) {
-            rte_timer_manage();
+            //rte_timer_manage();
         }
 
         idle = 1;
@@ -2048,8 +2048,10 @@ main_loop(void *arg)
 
         div_tsc = rte_rdtsc();
 
-        if (likely(lr->loop != NULL && (!idle || cur_tsc - usch_tsc >= drain_tsc))) {
-            usch_tsc = cur_tsc;
+        //if (likely(lr->loop != NULL && (!idle || cur_tsc - usch_tsc >= drain_tsc))) {
+          
+      	if (likely(lr->loop != NULL)){
+	    usch_tsc = cur_tsc;
             lr->loop(lr->arg);
         }
 

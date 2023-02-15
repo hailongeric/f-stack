@@ -110,19 +110,19 @@ int loop(void *arg)
 int main(int argc, char * argv[])
 {
     ff_init(argc, argv);
-
+    printf("ff init fin\n");
     assert((kq = ff_kqueue()) > 0);
-
+    printf("ff k fin\n");
     sockfd = ff_socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
         printf("ff_socket failed, sockfd:%d, errno:%d, %s\n", sockfd, errno, strerror(errno));
         exit(1);
     }
-
+    printf("ff socket fin\n");
     struct sockaddr_in my_addr;
     bzero(&my_addr, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(80);
+    my_addr.sin_port = htons(8080);
     my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     int ret = ff_bind(sockfd, (struct linux_sockaddr *)&my_addr, sizeof(my_addr));
@@ -171,5 +171,6 @@ int main(int argc, char * argv[])
 #endif
 
     ff_run(loop, NULL);
+    printf("loop\n");
     return 0;
 }

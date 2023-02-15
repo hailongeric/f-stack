@@ -101,6 +101,7 @@ vsetzoneslab(vm_offset_t va, uma_zone_t zone, uma_slab_t slab)
 {
     struct uma_page_head *hash_list;
     uma_page_t up;
+    //printf("uma_page_slab_hash (%#lx) index(%#lx)\n",uma_page_slab_hash,UMA_PAGE_HASH(va));
     hash_list = &uma_page_slab_hash[UMA_PAGE_HASH(va)];
     LIST_FOREACH(up, hash_list, list_entry)
         if (up->up_va == va)

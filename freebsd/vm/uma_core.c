@@ -2734,9 +2734,11 @@ zone_ctor(void *mem, int size, void *udata, int flags)
 	    (UMA_ZONE_INHERIT | UMA_ZFLAG_INHERIT));
 
 out:
+//printf("malloc booted(%d)>= BOOT_PCPU(%d) zone(%#lx) #EARLY_COUNTER(%#lx) pcpup(%#lx) \n",booted, BOOT_PCPU, zone,EARLY_COUNTER,pcpup);
 	if (booted >= BOOT_PCPU) {
 		zone_alloc_counters(zone, NULL);
 		if (booted >= BOOT_RUNNING)
+
 			zone_alloc_sysctl(zone, NULL);
 	} else {
 		zone->uz_allocs = EARLY_COUNTER;
@@ -2897,7 +2899,6 @@ uma_startup1(vm_offset_t virtual_avail)
 
 	rw_init(&uma_rwlock, "UMA lock");
 	sx_init(&uma_reclaim_lock, "umareclaim");
-
 	ksize = sizeof(struct uma_keg) +
 	    (sizeof(struct uma_domain) * vm_ndomains);
 	ksize = roundup(ksize, UMA_SUPER_ALIGN);
@@ -2943,19 +2944,21 @@ uma_startup1(vm_offset_t virtual_avail)
 	args.align = UMA_SUPER_ALIGN - 1;
 	args.flags = UMA_ZFLAG_INTERNAL;
 	zone_ctor(zones, zsize, &args, M_WAITOK);
-
 	/* Now make zones for slab headers */
+	printf("uma_zreaet st\n");
 	slabzones[0] = uma_zcreate("UMA Slabs 0", SLABZONE0_SIZE,
 	    NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, UMA_ZFLAG_INTERNAL);
 	slabzones[1] = uma_zcreate("UMA Slabs 1", SLABZONE1_SIZE,
 	    NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, UMA_ZFLAG_INTERNAL);
-
 	hashzone = uma_zcreate("UMA Hash",
 	    sizeof(struct slabhead *) * UMA_HASH_SIZE_INIT,
 	    NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, UMA_ZFLAG_INTERNAL);
-
+	printf("bucket_init st\n");
 	bucket_init();
+	printf("smr_init st\n");
 	smr_init();
+	printf("ret\n");
+
 }
 
 #ifndef FSTACK
@@ -3100,7 +3103,6 @@ uma_zcreate(const char *name, size_t size, uma_ctor ctor, uma_dtor dtor,
 	sx_slock(&uma_reclaim_lock);
 	res = zone_alloc_item(zones, &args, UMA_ANYDOMAIN, M_WAITOK);
 	sx_sunlock(&uma_reclaim_lock);
-
 	return (res);
 }
 
@@ -4084,12 +4086,10 @@ static void *
 zone_alloc_item(uma_zone_t zone, void *udata, int domain, int flags)
 {
 	void *item;
-
 	if (zone->uz_max_items > 0 && zone_alloc_limit(zone, 1, flags) == 0) {
 		counter_u64_add(zone->uz_fails, 1);
 		return (NULL);
 	}
-
 	/* Avoid allocs targeting empty domains. */
 	if (domain != UMA_ANYDOMAIN && VM_DOMAIN_EMPTY(domain))
 		domain = UMA_ANYDOMAIN;
@@ -4113,11 +4113,9 @@ zone_alloc_item(uma_zone_t zone, void *udata, int domain, int flags)
 	    item);
 	if (item == NULL)
 		goto fail;
-
 	counter_u64_add(zone->uz_allocs, 1);
 	CTR3(KTR_UMA, "zone_alloc_item item %p from %s(%p)", item,
 	    zone->uz_name, zone);
-
 	return (item);
 
 fail_cnt:
